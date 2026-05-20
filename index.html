@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ตรวจสอบที่อยู่ BCC</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F4F0;
+    --surface: #FFFFFF;
+    --surface2: #ECEAE4;
+    --border: #D8D5CC;
+    --text: #1A1917;
+    --text2: #6B6860;
+    --text3: #9E9C97;
+    --ok: #1A6B3C;
+    --ok-bg: #E8F5EE;
+    --ok-border: #A8D9BB;
+    --fail: #9B1C1C;
+    --fail-bg: #FEF2F2;
+    --fail-border: #FCCFCF;
+    --accent: #1A3A6B;
+    --accent-light: #E8EDF5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'IBM Plex Sans Thai', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  .top-bar {
+    background: var(--accent);
+    padding: 16px 20px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .top-bar .logo {
+    width: 34px;
+    height: 34px;
+    background: #FFFFFF22;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .top-bar .logo svg { width: 20px; height: 20px; fill: white; }
+  .top-bar h1 { font-size: 16px; font-weight: 600; color: white; line-height: 1.2; }
+  .top-bar p { font-size: 11px; color: #FFFFFF88; margin-top: 1px; }
+
+  .content { padding: 16px; max-width: 500px; margin: 0 auto; }
+
+  .ref-card {
+    background: var(--accent-light);
+    border: 1px solid #C5D0E8;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .ref-card .label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ref-card .label svg { width: 13px; height: 13px; }
+  .ref-card p {
+    font-size: 13px;
+    color: #2A3F6B;
+    line-height: 1.75;
+    font-family: 'IBM Plex Sans Thai', sans-serif;
+  }
+  .ref-card .taxid {
+    margin-top: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: #4A5A80;
+    background: #D8E2F5;
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+  }
+
+  .input-section { margin-bottom: 16px; }
+  .input-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    margin-bottom: 8px;
+    display: block;
+  }
+  textarea {
+    width: 100%;
+    min-height: 130px;
+    resize: vertical;
+    padding: 14px;
+    font-size: 15px;
+    font-family: 'IBM Plex Sans Thai', sans-serif;
+    line-height: 1.65;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--text);
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  textarea::placeholder { color: var(--text3); }
+
+  .char-count {
+    text-align: right;
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 5px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .btn-check {
+    width: 100%;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: 'IBM Plex Sans Thai', sans-serif;
+    color: white;
+    background: var(--accent);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: opacity 0.15s, transform 0.1s;
+    -webkit-appearance: none;
+  }
+  .btn-check:active { opacity: 0.85; transform: scale(0.98); }
+  .btn-check:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-check svg { width: 18px; height: 18px; }
+
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid #FFFFFF44;
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result-wrap { margin-top: 20px; animation: fadeUp 0.3s ease; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+  .result-banner {
+    border-radius: 12px 12px 0 0;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .result-banner.pass { background: var(--ok-bg); border: 1.5px solid var(--ok-border); border-bottom: none; }
+  .result-banner.fail { background: var(--fail-bg); border: 1.5px solid var(--fail-border); border-bottom: none; }
+  .result-banner svg { width: 26px; height: 26px; flex-shrink: 0; }
+  .result-banner .banner-title { font-size: 17px; font-weight: 600; }
+  .result-banner.pass .banner-title { color: var(--ok); }
+  .result-banner.fail .banner-title { color: var(--fail); }
+  .result-banner .banner-sub { font-size: 12px; margin-top: 2px; }
+  .result-banner.pass .banner-sub { color: #2D8B56; }
+  .result-banner.fail .banner-sub { color: #C53030; }
+
+  .field-list {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+  }
+  .field-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--bg);
+  }
+  .field-row:last-child { border-bottom: none; }
+  .field-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .field-icon.ok { background: var(--ok-bg); }
+  .field-icon.ok svg { stroke: var(--ok); }
+  .field-icon.fail { background: var(--fail-bg); }
+  .field-icon.fail svg { stroke: var(--fail); }
+  .field-icon svg { width: 13px; height: 13px; stroke-width: 2.5; fill: none; }
+  .field-body { flex: 1; min-width: 0; }
+  .field-name { font-size: 11px; color: var(--text3); margin-bottom: 3px; font-weight: 500; letter-spacing: 0.02em; }
+  .field-found { font-size: 14px; color: var(--text); line-height: 1.4; }
+  .field-found.missing { color: var(--text3); font-style: italic; }
+  .field-expected { font-size: 12px; color: var(--fail); margin-top: 4px; display: flex; align-items: flex-start; gap: 4px; }
+  .field-expected span { background: var(--fail-bg); padding: 2px 8px; border-radius: 5px; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; }
+
+  .input-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+  .input-toolbar .input-label { margin-bottom: 0; flex: 1; }
+  .btn-camera {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'IBM Plex Sans Thai', sans-serif;
+    color: var(--accent);
+    background: var(--accent-light);
+    border: 1px solid #C5D0E8;
+    border-radius: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-appearance: none;
+    transition: background 0.1s;
+    flex-shrink: 0;
+  }
+  .btn-camera:active { background: #D5DFF0; }
+  .btn-camera svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  .preview-wrap {
+    position: relative;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1.5px solid var(--border);
+  }
+  .preview-wrap img { width: 100%; display: block; max-height: 220px; object-fit: cover; }
+  .preview-remove {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 26px; height: 26px;
+    background: rgba(0,0,0,0.55);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    border: none;
+  }
+  .preview-remove svg { width: 14px; height: 14px; stroke: white; stroke-width: 2.5; fill: none; }
+  .preview-label {
+    font-size: 11px;
+    color: var(--text3);
+    text-align: center;
+    padding: 6px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+  }
+
+  .btn-clear {
+    width: 100%;
+    margin-top: 12px;
+    padding: 13px;
+    font-size: 14px;
+    font-family: 'IBM Plex Sans Thai', sans-serif;
+    color: var(--text2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    -webkit-appearance: none;
+    transition: background 0.1s;
+  }
+  .btn-clear:active { background: var(--surface2); }
+  .btn-clear svg { width: 15px; height: 15px; }
+
+  .footer { text-align: center; padding: 24px 16px; font-size: 11px; color: var(--text3); }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+    </svg>
+  </div>
+  <div>
+    <h1>ตรวจสอบที่อยู่ในบิล</h1>
+    <p>Bangkok Crystal Co., Ltd.</p>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="ref-card" style="margin-top:16px">
+    <div class="label">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1A3A6B" stroke-width="2" xmlns="http://www.w3.org/2000/svg"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      ที่อยู่มาตรฐาน BCC
+    </div>
+    <p>
+      บริษัท บางกอกคริสตัล จำกัด (สำนักงานใหญ่)<br>
+      99 หมู่ 8 ถ.สาย 3191 ต.มาบข่า<br>
+      อ.นิคมพัฒนา จ.ระยอง 21180
+    </p>
+    <div class="taxid">เลขผู้เสียภาษี: 0105537152257</div>
+  </div>
+
+  <div class="input-section">
+    <div class="input-toolbar">
+      <label class="input-label" for="input-addr">ที่อยู่จากบิล</label>
+      <button class="btn-camera" onclick="document.getElementById('camera-input').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" xmlns="http://www.w3.org/2000/svg">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        ถ่ายรูปบิล
+      </button>
+      <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+    </div>
+
+    <div id="preview-wrap" class="preview-wrap" style="display:none">
+      <img id="preview-img" src="" alt="รูปบิล">
+      <button class="preview-remove" onclick="removePhoto()" aria-label="ลบรูป">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="preview-label" id="preview-label">รูปพร้อมส่ง AI วิเคราะห์</div>
+    </div>
+
+    <textarea id="input-addr"
+      placeholder="วางที่อยู่จากบิลที่นี่ หรือถ่ายรูปบิลด้านบน..."
+      oninput="updateCount()"></textarea>
+    <div class="char-count"><span id="char-count">0</span> ตัวอักษร</div>
+  </div>
+
+  <button class="btn-check" id="check-btn" onclick="runCheck()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    ตรวจสอบ
+  </button>
+
+  <div id="result-area"></div>
+  <button class="btn-clear" id="clear-btn" style="display:none" onclick="clearAll()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" xmlns="http://www.w3.org/2000/svg"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+    ล้างและตรวจสอบใหม่
+  </button>
+
+</div>
+
+<div class="footer">BCC Address Checker · Bangkok Crystal Co., Ltd.</div>
+
+<script>
+let capturedImageB64 = null;
+let capturedMediaType = null;
+
+function updateCount() {
+  document.getElementById('char-count').textContent = document.getElementById('input-addr').value.length;
+}
+
+function handlePhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  capturedMediaType = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const dataUrl = ev.target.result;
+    capturedImageB64 = dataUrl.split(',')[1];
+    document.getElementById('preview-img').src = dataUrl;
+    document.getElementById('preview-wrap').style.display = 'block';
+    document.getElementById('preview-label').textContent = 'รูปพร้อมส่ง AI วิเคราะห์';
+    document.getElementById('input-addr').placeholder = 'ไม่ต้องพิมพ์ — AI จะอ่านจากรูปให้';
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function removePhoto() {
+  capturedImageB64 = null;
+  capturedMediaType = null;
+  document.getElementById('preview-wrap').style.display = 'none';
+  document.getElementById('preview-img').src = '';
+  document.getElementById('input-addr').placeholder = 'วางที่อยู่จากบิลที่นี่ หรือถ่ายรูปบิลด้านบน...';
+}
+
+function clearAll() {
+  removePhoto();
+  document.getElementById('input-addr').value = '';
+  document.getElementById('char-count').textContent = '0';
+  document.getElementById('result-area').innerHTML = '';
+  document.getElementById('clear-btn').style.display = 'none';
+}
+
+async function runCheck() {
+  const addr = document.getElementById('input-addr').value.trim();
+  const hasImage = !!capturedImageB64;
+  if (!addr && !hasImage) {
+    alert('กรุณากรอกที่อยู่ หรือถ่ายรูปบิลก่อนตรวจสอบ');
+    return;
+  }
+
+  const btn = document.getElementById('check-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> กำลังตรวจสอบ...';
+  document.getElementById('result-area').innerHTML = '';
+
+  const systemPrompt = `คุณคือระบบตรวจสอบที่อยู่บริษัทในใบแจ้งหนี้/ใบกำกับภาษี
+
+ที่อยู่มาตรฐานที่ถูกต้องของบริษัท คือ:
+- ชื่อบริษัท: บริษัท บางกอกคริสตัล จำกัด
+- ประเภท: สำนักงานใหญ่ (ต้องระบุ)
+- บ้านเลขที่: 99 หมู่ 8 ถ.สาย 3191
+- ตำบล: มาบข่า (หรือ ต.มาบข่า)
+- อำเภอ: นิคมพัฒนา (หรือ อ.นิคมพัฒนา)
+- จังหวัด: ระยอง (หรือ จ.ระยอง)
+- รหัสไปรษณีย์: 21180
+- เลขประจำตัวผู้เสียภาษี: 0105537152257
+
+ตรวจสอบทีละรายการ ตอบเป็น JSON เท่านั้น ห้ามมี markdown ห้ามมีคำอธิบายนอก JSON:
+{
+  "overall": "pass" หรือ "fail",
+  "fields": [
+    {"name":"ชื่อบริษัท","status":"ok" หรือ "fail","found":"ค่าที่พบ หรือ null","expected":"บริษัท บางกอกคริสตัล จำกัด"},
+    {"name":"สำนักงานใหญ่","status":"ok" หรือ "fail","found":"ค่าที่พบ หรือ null","expected":"สำนักงานใหญ่"},
+    {"name":"บ้านเลขที่/ถนน","status":"ok" หรือ "fail","found":"ค่าที่พบ หรือ null","expected":"99 หมู่ 8 ถ.สาย 3191"},
+    {"name":"ตำบล","status":"ok" หรือ "fail","found":"ค่าที่พบ หรือ null","expected":"ต.มาบข่า"},
+    {"name":"อำเภอ","status":"ok" หรือ "fail","found":"ค่าที่พบ หรือ null","expected":"อ.นิคมพัฒนา"},
+    {"name":"จังหวัด","status":"ok" หรือ "fail","found":"ค่าที่พบ หรือ null","expected":"จ.ระยอง"},
+    {"name":"รหัสไปรษณีย์","status":"ok" หรือ "fail","found":"ค่าที่พบ หรือ null","expected":"21180"},
+    {"name":"เลขประจำตัวผู้เสียภาษี","status":"ok" หรือ "fail","found":"ค่าที่พบ หรือ null","expected":"0105537152257"}
+  ]
+}`;
+
+  let userContent;
+  if (hasImage) {
+    userContent = [
+      { type: 'image', source: { type: 'base64', media_type: capturedMediaType, data: capturedImageB64 } },
+      { type: 'text', text: systemPrompt + (addr ? `\n\nข้อความเพิ่มเติมจากผู้ใช้: "${addr}"` : '\n\nกรุณาอ่านที่อยู่บริษัทจากรูปภาพบิล แล้วตรวจสอบตามเงื่อนไข') }
+    ];
+  } else {
+    userContent = systemPrompt + `\n\nที่อยู่ที่ต้องการตรวจสอบ:\n"${addr}"`;
+  }
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: userContent }]
+      })
+    });
+    const data = await resp.json();
+    const raw = (data.content || []).map(b => b.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+    renderResult(result);
+    if (hasImage) document.getElementById('preview-label').textContent = 'รูปที่ใช้ตรวจสอบ';
+  } catch(e) {
+    document.getElementById('result-area').innerHTML =
+      `<p style="color:var(--fail);font-size:14px;text-align:center;margin-top:1rem;padding:1rem;background:var(--fail-bg);border-radius:12px">เกิดข้อผิดพลาด: ${e.message}</p>`;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> ตรวจสอบ';
+  document.getElementById('clear-btn').style.display = 'flex';
+}
+
+function renderResult(result) {
+  const isPass = result.overall === 'pass';
+  const failCount = (result.fields || []).filter(f => f.status === 'fail').length;
+
+  const checkIcon = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><polyline points="20 6 9 17 4 12" stroke="${isPass ? 'var(--ok)' : '#999'}" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`;
+  const alertIcon = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="var(--fail)" stroke-width="2" fill="none"/><line x1="12" y1="8" x2="12" y2="12" stroke="var(--fail)" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="16" r="1.2" fill="var(--fail)"/></svg>`;
+
+  let html = `<div class="result-wrap">
+    <div class="result-banner ${isPass ? 'pass' : 'fail'}">
+      ${isPass ? checkIcon : alertIcon}
+      <div>
+        <div class="banner-title">${isPass ? 'ถูกต้องสมบูรณ์' : `ไม่ครบถ้วน — ขาด ${failCount} รายการ`}</div>
+        <div class="banner-sub">${isPass ? 'ที่อยู่ตรงตามมาตรฐาน BCC ครบทุกรายการ' : 'กรุณาแก้ไขรายการที่แสดงสีแดงด้านล่าง'}</div>
+      </div>
+    </div>
+    <div class="field-list">`;
+
+  (result.fields || []).forEach(f => {
+    const ok = f.status === 'ok';
+    const okCheck = `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const failX = `<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg>`;
+    html += `<div class="field-row">
+      <div class="field-icon ${ok ? 'ok' : 'fail'}">${ok ? okCheck : failX}</div>
+      <div class="field-body">
+        <div class="field-name">${f.name}</div>
+        <div class="field-found ${!f.found ? 'missing' : ''}">${f.found || 'ไม่พบในบิล'}</div>
+        ${!ok ? `<div class="field-expected">ต้องเป็น: <span>${f.expected}</span></div>` : ''}
+      </div>
+    </div>`;
+  });
+
+  html += `</div></div>`;
+  document.getElementById('result-area').innerHTML = html;
+}
+</script>
+</body>
+</html>
